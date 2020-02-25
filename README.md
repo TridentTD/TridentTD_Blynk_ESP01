@@ -1,6 +1,8 @@
 # TridentTD_Blynk_ESP01
 ESP8266 for Blynk with ESP-01 module
 
+![Arduino_ESP01.png](Arduino_ESP01.png)
+
 การต่อ Blynk แบบ ใช้ โมดูล ESP-01 ร่วมกับ Arduino UNO/MEGA  
 ในบางครั้งการเมื่อ WiFi ไม่สามารถเชื่อมต่อได้  
 จะทำให้ไม่สามารถควบคุมสิ่งอื่นๆ ที่ต่อพ่วง Arduino UNO/MEGA ต่อได้  
