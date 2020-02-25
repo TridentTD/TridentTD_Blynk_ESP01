@@ -3,6 +3,9 @@
  * @brief The definition of class ESP8266. 
  * @author Wu Pengfei<pengfei.wu@itead.cc> 
  * @date 2015.02
+ *
+ * add begin(..), isConnected(), etc.. by TridentTD
+ * @ 25/02/2020
  * 
  * @par Copyright:
  * Copyright (c) 2015 ITEAD Intelligent Systems Co., Ltd. \n\n
@@ -32,6 +35,21 @@
  */
 
 #define  USER_SEL_VERSION         VERSION_22
+
+// TridentTD
+#define TRIDENT_WIFI_CONNECTED()    void WiFiOnConnected()
+#define TRIDENT_WIFI_DISCONNECTED() void WiFiOnDisconnected()
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+  void WiFiNoOpCbk();
+  TRIDENT_WIFI_CONNECTED();
+  TRIDENT_WIFI_DISCONNECTED();
+#ifdef __cplusplus
+}
+#endif
+
 
 /**
  * Provide an easy-to-use way to manipulate ESP8266. 
@@ -192,7 +210,7 @@ class ESP8266 {
      */ 
     String getNowConecAp(uint8_t pattern=DEFAULT_PATTERN);
     
-    void timeout(uint32_t t)  { wifi_timeout = t;} // TridentTD
+    inline void timeout(uint32_t t)  { wifi_timeout = t;} // TridentTD
     /**
      * Join in AP. 
      *
@@ -204,7 +222,22 @@ class ESP8266 {
      * @note This method will take a couple of seconds. 
      */
     bool joinAP(String ssid, String pwd,uint8_t pattern=DEFAULT_PATTERN);
+
+    /**
+     * connect in AP.   (like joinAP but with timeout)
+     *
+     * @param pattern -1 send "AT+CWJAP_DEF=" -2 send "AT+CWJAP_CUR=" -3 send "AT+CWJAP=". 
+     * @param ssid - SSID of AP to join in. 
+     * @param pwd - Password of AP to join in. 
+     * @retval true - success.
+     * @retval false - failure.
+     * @note This method will take a couple of seconds. 
+     */
+    void begin(String ssid, String pwd,uint8_t pattern=DEFAULT_PATTERN);
+
+    bool isConnected();
     
+    inline String localIP()    { return this->getLocalIP(); }
     /**
      * Leave AP joined before. 
      *
@@ -675,6 +708,15 @@ class ESP8266 {
     onData m_onData;
     void*  m_onDataPtr;
     uint32_t wifi_timeout = 10000;  // TridentTD
+
+    typedef enum { EVENT_DISCONNECTED, EVENT_CONNECTING, EVENT_CONNECTED } wifi_event_t;
+    typedef enum { WIFI_DISCONNECTED, WIFI_CONNECTED } wifi_state_t;
+    wifi_state_t wifi_state = WIFI_DISCONNECTED;
+    wifi_event_t wifi_event = EVENT_DISCONNECTED;
+    uint32_t wifi_timer;
+    String _ssid;
+    String _pass;
+    uint8_t _pattern;
 };
 
 #endif /* #ifndef __ESP8266_H__ */
