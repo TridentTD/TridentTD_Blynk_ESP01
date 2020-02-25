@@ -1,5 +1,5 @@
 # TridentTD_Blynk_ESP01
-ESP8266 for Blynk with ESP-01 module
+ESP8266 library for Blynk with ESP-01 module
 
 ![Arduino_ESP01.png](Arduino_ESP01.png)
 
