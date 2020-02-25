@@ -3,6 +3,9 @@
  * @brief The implementation of class ESP8266. 
  * @author Wu Pengfei<pengfei.wu@itead.cc> 
  * @date 2015.02
+ *
+ * add begin(..), isConnected(), etc.. by TridentTD
+ * @ 25/02/2020
  * 
  * @par Copyright:
  * Copyright (c) 2015 ITEAD Intelligent Systems Co., Ltd. \n\n
@@ -20,6 +23,14 @@
  */
 #include "ESP8266_Lib.h"
 #include <avr/pgmspace.h>
+
+/********************
+ * Helper function
+ *******************/
+void WiFiNoOpCbk() {}
+TRIDENT_WIFI_CONNECTED() __attribute__((weak, alias("WiFiNoOpCbk")));
+TRIDENT_WIFI_DISCONNECTED() __attribute__((weak, alias("WiFiNoOpCbk")));
+
 
 ESP8266::ESP8266(Stream *uart)
     : m_puart(uart)
@@ -162,6 +173,108 @@ bool ESP8266::joinAP(String ssid, String pwd,uint8_t pattern)
 {
     return sATCWJAP(ssid, pwd,pattern);
 }
+
+
+void ESP8266::begin(String ssid, String pwd,uint8_t pattern)
+{
+    if (!this->kick())    return;
+    if (!this->setEcho(0)) return;
+    this->enableMUX();
+    if (!this->setOprToStation()) return false;
+
+// bool ESP8266::sATCWJAP(String ssid, String pwd,uint8_t pattern)
+    String data;
+    if (!pattern) {
+        return false;
+    }
+    rx_empty();
+    switch(pattern)
+    {
+        case 1 :
+            m_puart->print(F("AT+CWJAP_DEF=\""));
+
+            break;
+        case 2:
+            m_puart->print(F("AT+CWJAP_CUR=\""));
+            break;
+        default:
+            m_puart->print(F("AT+CWJAP=\""));
+    }
+    
+    m_puart->print(ssid);
+    m_puart->print(F("\",\""));
+    m_puart->print(pwd);
+    m_puart->println(F("\""));
+
+    this->_ssid = ssid;
+    this->_pass = pwd;
+    this->_pattern = pattern;
+    this->wifi_event = EVENT_CONNECTING;
+    this->wifi_timer = millis() + this->wifi_timeout;
+}
+
+    // data = recvString("OK", "FAIL", this->wifi_timeout);
+bool ESP8266::isConnected() {
+    if( this->wifi_event == EVENT_CONNECTING ) {
+        String data;
+        char a;
+        unsigned long start = millis();
+        while(m_puart->available() > 0) {
+            a = m_puart->read();
+            if(a == '\0') continue;
+            data += a;
+            if (data.indexOf("OK") != -1) {
+                this->wifi_event = EVENT_CONNECTED;
+                this->wifi_state = WIFI_CONNECTED;
+                WiFiOnConnected();
+                return true;
+            } else if (data.indexOf("FAIL") != -1) {
+                this->wifi_event = EVENT_DISCONNECTED;
+                this->wifi_state = WIFI_DISCONNECTED;
+                WiFiOnDisconnected();
+                return false;
+            } else if (checkIPD(data)) {
+                return false;
+            }
+        }
+
+        if( millis() >= this->wifi_timer ) {
+            this->wifi_event = EVENT_DISCONNECTED;
+            this->wifi_state = WIFI_DISCONNECTED;
+            return false;
+        }
+
+        return (this->wifi_state == WIFI_CONNECTED);
+    }else
+    if( millis() >= this->wifi_timer) {
+        this->wifi_timer = millis() + this->wifi_timeout;
+        String local_ip = this->getLocalIP();
+        if(local_ip.indexOf(".") != -1) {
+            this->wifi_state = WIFI_CONNECTED;
+            return true;
+        }else{
+            if( this->wifi_state == WIFI_CONNECTED) {
+                WiFiOnDisconnected();
+            }
+            this->wifi_state = WIFI_DISCONNECTED;
+
+            // auto reconnect
+            if( this->_ssid != "") {
+                // Serial.println("[ESP-01] WiFi Reconnecting...");
+                this->begin(this->_ssid, this->_pass, this->_pattern);
+            }
+            return false;
+        }
+    }else {
+        if( this->wifi_state == WIFI_CONNECTED) {
+            return true;
+        }else
+        if( this->wifi_state == WIFI_DISCONNECTED) {
+            return false;
+        }
+    }
+}
+
 
 bool ESP8266::leaveAP(void)
 {
