@@ -245,26 +245,26 @@ bool ESP8266::isConnected() {
         }
 
         return (this->wifi_state == WIFI_CONNECTED);
-    }else
-    if( millis() >= this->wifi_timer) {
-        this->wifi_timer = millis() + this->wifi_timeout;
-        String local_ip = this->getLocalIP();
-        if(local_ip.indexOf(".") != -1) {
-            this->wifi_state = WIFI_CONNECTED;
-            return true;
-        }else{
-            if( this->wifi_state == WIFI_CONNECTED) {
-                WiFiOnDisconnected();
-            }
-            this->wifi_state = WIFI_DISCONNECTED;
+//     }else
+//     if( millis() >= this->wifi_timer) {
+//         this->wifi_timer = millis() + this->wifi_timeout;
+//         String local_ip = this->getLocalIP();
+//         if(local_ip.indexOf(".") != -1) {
+//             this->wifi_state = WIFI_CONNECTED;
+//             return true;
+//         }else{
+//             if( this->wifi_state == WIFI_CONNECTED) {
+//                 WiFiOnDisconnected();
+//             }
+//             this->wifi_state = WIFI_DISCONNECTED;
 
-            // auto reconnect
-            if( this->_ssid != "") {
-                // Serial.println("[ESP-01] WiFi Reconnecting...");
-                this->begin(this->_ssid, this->_pass, this->_pattern);
-            }
-            return false;
-        }
+//             // auto reconnect
+//             if( this->_ssid != "") {
+//                 // Serial.println("[ESP-01] WiFi Reconnecting...");
+//                 this->begin(this->_ssid, this->_pass, this->_pattern);
+//             }
+//             return false;
+//         }
     }else {
         if( this->wifi_state == WIFI_CONNECTED) {
             return true;
